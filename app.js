@@ -64,29 +64,14 @@ connection.on('connect', function(err) {
 });
 //*****************************************************************************************
 //*****************************************************************************************
-// // catch 404 and forward to error handler
-// app.use(function(req, res, next) {
-//   var err = new Error('Not Found');
-//   err.status = 404;
-//   next(err);
-// });
-//
-// // // error handler
-// app.use(function(err, req, res, next) {
-//   // set locals, only providing error in development
-//   res.locals.message = err.message;
-//   res.locals.error = req.app.get('env') === 'development' ? err : {};
-//
-// // render the error page
-//   res.status(err.status || 500);
-//   res.render('error');
-//  });
 app.use(function(req, res, next){
     if (connected)
         next();
     else
         res.status(503).send('Server is down');
 });
+
+var isLoggedIn = false;
 //register request
 app.post('/registerUser', function (req, res) {
     var email = req.body.mail;
@@ -110,14 +95,7 @@ app.post('/registerUser', function (req, res) {
     });
 });
 
-//get only the product witch added the last 30 days
-app.get('/getLatestProducts', function (req,res) {
-    //it is just a simple example without handling the answer
-    DButilsAzure.Select(connection, 'Select * from Musical_instrument where PublishDate >= DATEADD(DAY,+11,GETDATE())', function (result) {
-        res.send(result);
-        console.log(result);
-    });
-});
+
 //get all product
 app.get('/getAllProducts', function (req,res) {
     DButilsAzure.Select(connection, 'Select * from Musical_instrument', function (result) {
@@ -141,8 +119,46 @@ app.post('/verifyUserAndRestorePass', function (req, res) {
         res.send(result);
         console.log(result);
     });
-
 });
+
+//login
+app.post('/login', function (req,res,next) {
+    var email = req.body.mail;
+    var pass = req.body.pass;
+    var loginPromise = login(email,pass);
+    loginPromise.then(function(ans)
+    {
+        res.send(ans);
+        console.log(ans);
+    })
+        .catch(function (reason) {
+            console.log(reason);
+            res.send(reason);
+        });
+});
+
+//get only the product witch added the last 30 days
+app.get('/login', function (req,res,next) {
+    //it is just a simple example without handling the answer
+    DButilsAzure.Select(connection, 'Select * from Musical_instrument where PublishDate >= DATEADD(DAY,+11,GETDATE())', function (result) {
+        res.send(result);
+        console.log(result);
+    });
+});
+
+var login =function login(email,pass) {
+    return DButilsAzure.Select(connection, squel.select()
+        .field("Mail")
+        .from("ClientsTable")
+        .where("Mail = "+"'"+email+"'")
+        .where("Password = "+"'"+pass+"'")
+        .toString());
+}
+
+var getLatestProduction=function(res) {
+    return DButilsAzure.Select(connection, 'Select * from Musical_instrument where PublishDate >= DATEADD(DAY,-30,GETDATE())');
+
+}
 
 
 module.exports = app;

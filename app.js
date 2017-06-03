@@ -2,7 +2,7 @@ var express = require('express');
 var bodyParser = require('body-parser');
 var app = express();
 var Connection = require('tedious').Connection;
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.urlencoded({extended: false}));
 app.use(bodyParser.json());
 var cors = require('cors');
 app.use(cors());
@@ -29,7 +29,7 @@ app.set('view engine', 'jade');
 //app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 app.use(logger('dev'));
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.urlencoded({extended: false}));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -38,7 +38,7 @@ app.use('/users', users);
 
 //*****************************************************************************************
 //start listen
-app.listen(3100, function() {
+app.listen(3100, function () {
     console.log('I am listening on localhost:3100');
     // server is open and listening on port 3100, to access: localhost:3100 in any browser.
 });
@@ -49,11 +49,11 @@ var config = {
     password: 'alon&liron1',
     server: 'shopix.database.windows.net',
     requestTimeout: 300000,
-    options: {encrypt:true, database: 'shope_nd'}
+    options: {encrypt: true, database: 'shope_nd'}
 };
 connection = new Connection(config);
 var connected = false;
-connection.on('connect', function(err) {
+connection.on('connect', function (err) {
     if (err) {
         console.error('error connecting: ' + err.message);
     }
@@ -64,48 +64,80 @@ connection.on('connect', function(err) {
 });
 //*****************************************************************************************
 //*****************************************************************************************
-app.use(function(req, res, next){
+app.use(function (req, res, next) {
     if (connected)
         next();
     else
         res.status(503).send('Server is down');
 });
 
-var isLoggedIn = false;
 //register request
 app.post('/registerUser', function (req, res) {
-    var email = req.body.mail;
-    DButilsAzure.Select(connection, "Select * from ClientsTable where Mail = "+"'"+email.toString()+"'", function (result) {
-        if (result.length!==0){
-            res.send("cannot add user with same email");
-        }
-        else {
-            DButilsAzure.Insert(req,connection,"INSERT INTO ClientsTable (Mail, Password, FirstName , LastName , Phone, Cellular, Adress , City , Country ,CreditCardNumber , isAdmin, InterestType, School, FirstPetName)" +
-                "VALUES (@mail , @password , @fName , @lName , @phone , @cellular , @addr , @city , @country, @creditCardNum, @isAdmin, @interest_types, @school, @firstPet) ", function (err, rowCount) {
-                if (err) {
-                    console.log(err);
-                }
-                else
-                {
-                    console.log("RegisterCompleted");
-                }
-            });
-            res.send("user was added successfully");
-        }
-    });
+    var query = squel.insert().into("ClientsTable")
+        .set('Mail', req.body.mail)
+        .set('Password', req.body.pass)
+        .set('FirstName', req.body.fName)
+        .set('LastName', req.body.lName)
+        .set('Phone', req.body.phone)
+        .set('Cellular', req.body.cellular)
+        .set('Adress', req.body.addr)
+        .set('City', req.body.city)
+        .set('Country', req.body.country)
+        .set('CreditCardNumber', req.body.creditCardNum)
+        .set('isAdmin', req.body.isAdmin)
+        .set('School', req.body.school)
+        .set('FirstPetName', req.body.firstPet);
+    DButilsAzure.Insert(connection, query)
+        .then(insertCategories)
+        .then(function (ans) {
+            res.send(ans);
+            console.log(ans);
+        })
+        .catch(function (reason) {
+            if (reason.message.includes("Violation of PRIMARY KEY constraint")) {
+                console.log("Mail  already used! **");
+                res.send("Mail  already used!");
+            }
+            else {
+                console.log("Server Problem, register fail!");
+                res.send("Server Problem, register fail!");
+            }
+        });
 });
 
+function insertCategories(response) {
+    return new Promise(function (resolve, reject) {
+        var allCategories = req.body.interest_types;
+        var cotegoriesArr = allCategories.split(",");
+        var userMail = req.body.mail;
+        var query = "INSERT INTO Categories (ClientMail, CategoryName) VALUES "
+        cotegoriesArr.forEach(function (category) {
+            query = query + "(" + "'" + userMail.toString() + "'," + "'" + category.toString() + "'), ";
+        })
+        query = query.substring(0, query.length - 1) + ";";
+        console.log("insert category: " + query);
+        DButilsAzure.Insert(connection, query)
+            .then(function (answer) {
+                res.send(answer);
+                console.log(answer);
+            })
+            .catch(function (reason) {
+                console.log("insert Category fail!");
+                res.send("insert Category fail!");
+            });
 
+    });
+}
 //get all product
-app.get('/getAllProducts', function (req,res) {
+app.get('/getAllProducts', function (req, res) {
     DButilsAzure.Select(connection, 'Select * from Musical_instrument', function (result) {
         res.send(result);
         console.log(result);
     });
 });
 
-app.get('/getTop5Products', function(req,res){
-    DButilsAzure.Select(connection, "SELECT TOP (5) * FROM Musical_instrument ORDER BY Sales_number DESC", function(result){
+app.get('/getTop5Products', function (req, res) {
+    DButilsAzure.Select(connection, "SELECT TOP (5) * FROM Musical_instrument ORDER BY Sales_number DESC", function (result) {
         res.send(result);
         console.log(result);
     });
@@ -120,9 +152,9 @@ app.post('/verifyUserAndRestorePass', function (req, res) {
     DButilsAzure.Select(connection, squel.select()
         .field("Password")
         .from("ClientsTable")
-        .where("Mail = "+"'"+email+"'")
-        .where("FirstPetName = "+"'"+firstPet+"'")
-        .where("School = "+"'"+school+"'")
+        .where("Mail = " + "'" + email + "'")
+        .where("FirstPetName = " + "'" + firstPet + "'")
+        .where("School = " + "'" + school + "'")
         .toString(), function (result) {
         res.send(result);
         console.log(result);
@@ -130,12 +162,11 @@ app.post('/verifyUserAndRestorePass', function (req, res) {
 });
 
 //login
-app.post('/login', function (req,res,next) {
+app.post('/login', function (req, res, next) {
     var email = req.body.mail;
     var pass = req.body.pass;
-    var loginPromise = login(email,pass);
-    loginPromise.then(function(ans)
-    {
+    var loginPromise = login(email, pass);
+    loginPromise.then(function (ans) {
         res.send(ans);
         console.log(ans);
     })
@@ -146,7 +177,7 @@ app.post('/login', function (req,res,next) {
 });
 
 //get only the product witch added the last 30 days
-app.get('/login', function (req,res,next) {
+app.get('/login', function (req, res, next) {
     //it is just a simple example without handling the answer
     DButilsAzure.Select(connection, 'Select * from Musical_instrument where PublishDate >= DATEADD(DAY,+11,GETDATE())', function (result) {
         res.send(result);
@@ -154,16 +185,16 @@ app.get('/login', function (req,res,next) {
     });
 });
 
-var login =function login(email,pass) {
+var login = function login(email, pass) {
     return DButilsAzure.Select(connection, squel.select()
         .field("Mail")
         .from("ClientsTable")
-        .where("Mail = "+"'"+email+"'")
-        .where("Password = "+"'"+pass+"'")
+        .where("Mail = " + "'" + email + "'")
+        .where("Password = " + "'" + pass + "'")
         .toString());
 }
 
-var getLatestProduction=function(res) {
+var getLatestProduction = function (res) {
     return DButilsAzure.Select(connection, 'Select * from Musical_instrument where PublishDate >= DATEADD(DAY,-30,GETDATE())');
 
 }

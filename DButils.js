@@ -12,7 +12,7 @@ exports.Select = function(connection, query, callback) {
         }
     });
     console.log("** Select **");
-    console.log("**Query is: " + query + "**");
+    console.log("**Query is: " + query + " **");
     var ans = [];
     var properties = [];
     req.on('columnMetadata', function (columns) {

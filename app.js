@@ -104,6 +104,14 @@ app.get('/getAllProducts', function (req,res) {
     });
 });
 
+app.get('/getTop5Products', function(req,res){
+    DButilsAzure.Select(connection, "SELECT TOP (5) * FROM Musical_instrument ORDER BY Sales_number DESC", function(result){
+        res.send(result);
+        console.log(result);
+    });
+});
+
+
 //restore pass by verify user
 app.post('/verifyUserAndRestorePass', function (req, res) {
     var email = req.body.mail;

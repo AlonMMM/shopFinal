@@ -91,7 +91,7 @@ app.post('/registerUser', function (req, res) {
         .then(insertCategories)
         .then(function (ans) {
             res.send(ans);
-            console.log(ans);
+            console.log("ans is : *****" +ans);
         })
         .catch(function (reason) {
             if (reason.message.includes("Violation of PRIMARY KEY constraint")) {
@@ -103,31 +103,36 @@ app.post('/registerUser', function (req, res) {
                 res.send("Server Problem, register fail!");
             }
         });
-});
 
-function insertCategories(response) {
-    return new Promise(function (resolve, reject) {
-        var allCategories = req.body.interest_types;
-        var cotegoriesArr = allCategories.split(",");
-        var userMail = req.body.mail;
-        var query = "INSERT INTO Categories (ClientMail, CategoryName) VALUES "
-        cotegoriesArr.forEach(function (category) {
-            query = query + "(" + "'" + userMail.toString() + "'," + "'" + category.toString() + "'), ";
-        })
-        query = query.substring(0, query.length - 1) + ";";
-        console.log("insert category: " + query);
-        DButilsAzure.Insert(connection, query)
-            .then(function (answer) {
-                res.send(answer);
-                console.log(answer);
-            })
-            .catch(function (reason) {
-                console.log("insert Category fail!");
-                res.send("insert Category fail!");
+    function insertCategories(response) {
+        return new Promise(function (resolve, reject) {
+            console.log("insert category*****");
+            var allCategories = req.body.interest_types;
+            if(allCategories.length===0)
+            {
+                resolve("No interest types...");
+            }
+            var cotegoriesArr = allCategories.split(",");
+            var userMail = req.body.mail;
+            var query = "INSERT INTO Categories (ClientMail, CategoryName) VALUES ";
+            cotegoriesArr.forEach(function (category) {
+                query = query + "(" + "'" + userMail.toString() + "'," + "'" + category.toString() + "'), ";
             });
+            query = query.substring(0, query.length - 2) + ";";
+            console.log("insert category: " + query);
+            DButilsAzure.Insert(connection, query)
+                .then(function (answer) {
+                    console.log(answer);
+                    resolve("interestTypes response: "+answer+", register response: "+response);
+                })
+                .catch(function (reason) {
+                    console.log("insert Category fail!");
+                    res.send("insert Category fail!");
+                });
 
-    });
-}
+        });
+    }
+});
 //get all product
 app.get('/getAllProducts', function (req, res) {
     DButilsAzure.Select(connection, 'Select * from Musical_instrument', function (result) {

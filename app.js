@@ -11,6 +11,8 @@ var squel = require("squel");
 var Request = require('tedious').Request;
 var TYPES = require('tedious').TYPES;
 
+var users = require('./routes/users');
+
 var path = require('path');
 var favicon = require('serve-favicon');
 var logger = require('morgan');
@@ -33,7 +35,7 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', index);
-app.use('/users', users);
+
 
 //*****************************************************************************************
 //start listen
@@ -43,55 +45,28 @@ app.listen(3100, function () {
 });
 //*****************************************************************************************
 //connect to the SQL azure server
-var config = {
-    userName: 'lironAlon',
-    password: 'alon&liron1',
-    server: 'shopix.database.windows.net',
-    requestTimeout: 300000,
-    options: {encrypt: true, database: 'shope_nd'}
-};
-connection = new Connection(config);
-var connected = false;
-connection.on('connect', function (err) {
-    if (err) {
-        console.error('error connecting: ' + err.message);
-    }
-    else {
-        console.log("Connected Azure");
-        connected = true;
-    }
-});
+
 //*****************************************************************************************
 
 //*****************************************************************************************
 app.use(function (req, res, next) {
-    if (connected)
         next();
-    else
-        res.status(503).send('Server is down');
 });
 
 //register request
-app.post('/registerUser', function (req, res) {
-    var query = squel.insert().into("ClientsTable")
-        .set('Mail', req.body.mail)
-        .set('Password', req.body.pass)
-        .set('FirstName', req.body.fName)
-        .set('LastName', req.body.lName)
-        .set('Phone', req.body.phone)
-        .set('Cellular', req.body.cellular)
-        .set('Adress', req.body.addr)
-        .set('City', req.body.city)
-        .set('Country', req.body.country)
-        .set('CreditCardNumber', req.body.creditCardNum)
-        .set('isAdmin', req.body.isAdmin)
-        .set('School', req.body.school)
-        .set('FirstPetName', req.body.firstPet);
-    DButilsAzure.Insert(connection, query)
-        .then(insertCategories)
+app.use('/users', users);
+app.use('/musicalsInstruments', users);
+
+//*******************Bonus part - Admins******************//
+//get all clients
+app.get('/getClients', function (req, res) {
+    var query = squel.select()
+        .from("ClientsTable")
+        .toString();
+    DButilsAzure.Select(query)
         .then(function (ans) {
             res.send(ans);
-            console.log("Register response:" + JSON.stringify(ans));
+            console.log("getClients response: " + ans);
         })
         .catch(function (reason) {
             if (reason.message.includes("Violation of PRIMARY KEY constraint")) {
@@ -103,137 +78,99 @@ app.post('/registerUser', function (req, res) {
                 res.send("Server Problem, register fail!");
             }
         });
+});
 
-    function insertCategories(response) {
-        return new Promise(function (resolve, reject) {
-            console.log("insert category*****");
-            var allCategories = req.body.interest_types;
-            if (allCategories.length === 0) {
-                resolve("No interest types...");
-            }
-            var cotegoriesArr = allCategories.split(",");
-            var userMail = req.body.mail;
-            var query = "INSERT INTO Categories (ClientMail, CategoryName) VALUES ";
-            cotegoriesArr.forEach(function (category) {
-                query = query + "(" + "'" + userMail.toString() + "'," + "'" + category.toString() + "'), ";
+//add product ********************
+app.post('/addProduct', function (req, res) {
+        var instrumentID = req.body.instrumentID;
+        var query = squel.insert().into("Musical_instrument")
+            .set('Musical_instrument', req.body.instrumentID)
+            .set('ManufacturID', req.body.manufacturID)
+            .set('Year', req.body.year)
+            .set('Description', req.body.description)
+            .set('PicturePath', req.body.picturePath)
+            .set('PublishDate', "GETDATE()", {
+                dontQuote: true
+            })
+            .set('Price', req.body.price)
+            .set('StokAmount', req.body.amount)
+            .set('Delivery_time', req.body.price)
+            .set('Sales_number', 0)
+            .toString();
+        DButilsAzure.Select(query)
+            .then(insertProductCategory)
+            .then(function (ans) {
+                res.send(true);
+                console.log("addProduct response: " + true);
+            })
+            .catch(function (reason) {
+                if (reason.message.includes("Violation of PRIMARY KEY constraint")) {  //if the product exist we only need to update inv
+                    console.log("Product  already exist! Updating**");
+                    var updatePromises = updateInvQuery();   //updete the amount of the inv for specific product
+                    updatePromises.then(function (ans) {
+                        res.send(ans);
+                        console.log("updateInvQuery response:" + ans);
+                    })
+                        .catch(function (reason) {
+                            console.log(reason + ", updateInvQuery fail!");
+                            res.send(reason);
+                        });
+                }
+                else {
+                    console.log("Server Problem, addProduct fail!");
+                    res.send(false);
+                }
             });
-            query = query.substring(0, query.length - 2) + ";";
-            console.log("insert category: " + query);
-            DButilsAzure.Insert(connection, query)
-                .then(function (answer) {
-                    console.log(answer);
-                    resolve("interestTypes response: " + answer + ", register response: " + response);
-                })
-                .catch(function (reason) {
-                    console.log("insert Category fail!");
-                    res.send("insert Category fail!");
-                });
 
-        });
+        //function to insert the category to tnother table
+        function insertProductCategory(response) {
+            return new Promise(function (resolve, reject) {
+                console.log("insertProductCategory**")
+                var insertCategory = squel.insert().into("InstrumentCategory")
+                    .set('Musical_instrument', req.body.instrumentID)
+                    .set('CategoryName', req.body.categoryName)
+                    .toString();
+                DButilsAzure.Insert(insertCategory)
+                    .then(function (ans) {
+                        console.log(ans);
+                        resolve(true);
+
+                    })
+                    .catch(function (reason) {
+                        console.log(reason);
+                        res.send(false);
+                    });
+
+            });
+        }
+
+        //function to updateInv if the product is exist
+        function updateInvQuery() {
+            return new Promise(function (resolve, reject) {
+                console.log("updateInvQuery promise!");
+                var invQuery = squel.update()
+                    .table("Musical_instrument")
+                    .set("StokAmount = StokAmount +" + "'" + req.body.amount + "'")
+                    .where("Musical_instrument = " + "'" + instrumentID + "'")
+                    .toString();
+                console.log(invQuery);
+                DButilsAzure.Insert(invQuery)
+                    .then(function (ans) {
+                        console.log("updateInvQuery resolve")
+                        resolve(true);
+                    })
+                    .catch(function (reason) {
+                        console.log("updateInvQuery reject")
+                        reject(false);
+                    });
+            });
+        }
     }
-});
+);
 
-//get all product
-app.get('/getAllProducts', function (req, res) {
-    var query = 'Select * from Musical_instrument'
-    DButilsAzure.Select(connection, query)
-        .then(function (ans) {
-            res.send(ans);
-            console.log("GetAllProduct response: " + JSON.stringify(ans));
-        })
-        .catch(function (reason) {
-            console.log("getAllProducts fail!");
-            res.send("getAllProducts fail!");
-        });
-});
-
-app.get('/getTop5Products', function (req, res) {
-    var query = "SELECT TOP (5) * FROM Musical_instrument ORDER BY Sales_number DESC";
-    DButilsAzure.Select(connection, query)
-        .then(function (ans) {
-            res.send(ans);
-            console.log("getTop5Products response: " + JSON.stringify(ans));
-        })
-        .catch(function (reason) {
-            console.log("getTop5Products fail!");
-            res.send("getTop5Products fail!");
-        });
-});
-
-
-//restore pass by verify user
-app.post('/verifyUserAndRestorePass', function (req, res) {
-    var email = req.body.mail;
-    var firstPet = req.body.firstPet;
-    var school = req.body.school;
-    var query = squel.select()
-        .field("Password")
-        .from("ClientsTable")
-        .where("Mail = " + "'" + email + "'")
-        .where("FirstPetName = " + "'" + firstPet + "'")
-        .where("School = " + "'" + school + "'")
-        .toString();
-    DButilsAzure.Select(connection, query)
-        .then(function (ans) {
-            if (ans.length === 0) {
-                res.send("wrong email or anwers!");
-                console.log("wrong email or anwers!");
-            }
-            else {
-                res.send(ans);
-                console.log("verifyUserAndRestorePass response: " + JSON.stringify(ans));
-            }
-        })
-        .catch(function (reason) {
-            console.log(reason + " ,verifyUserAndRestorePass fail!");
-            res.send("verifyUserAndRestorePass fail!");
-        });
-
-});
-
-//login
-app.post('/login', function (req, res, next) {
-    var email = req.body.mail;
-    var pass = req.body.pass;
-    var query = loginQuery(email, pass);
-    DButilsAzure.Select(connection, query)
-        .then(function (ans) {
-            if (ans.length === 0) {
-                res.send("wrong email or Password!");
-                console.log("wrong email or Password!");
-            }
-            else {
-                res.send(ans);   //send the mail back to the client
-                console.log("login response: " + JSON.stringify(ans));
-            }
-        })
-        .catch(function (reason) {
-            console.log(reason + ", login fail!");
-            res.send(reason);
-        });
-});
-
-//get only the product witch added the last 30 days
-app.get('/login', function (req, res, next) {
-    //it is just a simple example without handling the answer
-    DButilsAzure.Select(connection, 'Select * from Musical_instrument where PublishDate >= DATEADD(DAY,-,GETDATE())', function (result) {
-        res.send(result);
-        console.log(result);
-    });
-});
-
-function loginQuery(email, pass) {
-    return squel.select()
-        .field("Mail")
-        .from("ClientsTable")
-        .where("Mail = " + "'" + email + "'")
-        .where("Password = " + "'" + pass + "'")
-        .toString();
-}
-
-var getLatestProduction = function (res) {
-    return DButilsAzure.Select(connection, 'Select * from Musical_instrument where PublishDate >= DATEADD(DAY,-30,GETDATE())');
-}
+//delete product *******************************************
+app.delete('/deleteProduct', function (req, res) {
+    var instrumentID = req.body.instrumentID;
 
 
 app.post('/buyProductsInCart', function (req, res) {
@@ -266,6 +203,45 @@ app.post('/buyProductsInCart', function (req, res) {
             ordersQuery = getOrderQuery(orderId, totPrice);
         })
     }
+    var deleteQueryFromSeconederyTable = squel.delete()
+        .from("InstrumentCategory")
+        .where("Musical_instrument = " + "'" + instrumentID + "'")
+        .toString();
+    //first delete from the small table
+    DButilsAzure.Delete(deleteQueryFromSeconederyTable)
+        .then(deleteFromMainTable)  //then from the mail table
+        .then(function (ans) {
+            console.log("Response deleteProduct: " + ans);
+            res.send(ans);
+        })
+        .catch(function (reason) {
+            console.log("Response deleteProduct ERROR: " + reason);
+            res.send("Response deleteProduct ERROR: " + reason);
+        });
+
+    function deleteFromMainTable(){
+        return new Promise(function (resolve, reject) {
+            var deleteQueryFromMailTable = squel.delete()
+                .from("Musical_instrument")
+                .where("Musical_instrument = " + "'" + instrumentID + "'")
+                .toString();
+            DButilsAzure.Delete(deleteQueryFromMailTable)
+                .then(function (ans) {
+                    console.log("deleteFromMainTable resolve")
+                    resolve(true);
+                })
+                .catch(function (reason) {
+                    console.log("deleteFromMainTable reject")
+                    reject(false);
+                });
+        });
+    }
+});
+
+//Adduser *******************************************
+app.post('/addUserByAdmin', function (req, res) {
+    req.redirect('/registerUser');
+});
 
     function insertToOrders(response) {
         return new Promise(function (resolve, reject) {

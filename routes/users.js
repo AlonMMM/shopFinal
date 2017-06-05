@@ -40,6 +40,7 @@ router.post('/registerUser', function (req, res) {
 
 });
 
+
 function insertCategories(allCategories,mail) {
     console.log("insert category*****");
     if (allCategories.length === 0) {

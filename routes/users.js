@@ -3,6 +3,7 @@ var router = express.Router();
 var DButilsAzure = require('/shop/DBUtils');
 var squel = require("squel");
 
+
 router.post('/registerUser', function (req, res) {
     var allCategories = req.body.interest_types;
     var query = squel.insert().into("ClientsTable")

@@ -11,7 +11,6 @@ var squel = require("squel");
 var Request = require('tedious').Request;
 var TYPES = require('tedious').TYPES;
 
-
 var path = require('path');
 var favicon = require('serve-favicon');
 var logger = require('morgan');
@@ -63,6 +62,7 @@ connection.on('connect', function (err) {
     }
 });
 //*****************************************************************************************
+
 //*****************************************************************************************
 app.use(function (req, res, next) {
     if (connected)
@@ -91,7 +91,7 @@ app.post('/registerUser', function (req, res) {
         .then(insertCategories)
         .then(function (ans) {
             res.send(ans);
-            console.log("ans is : *****" +ans);
+            console.log("Register response:" + JSON.stringify(ans));
         })
         .catch(function (reason) {
             if (reason.message.includes("Violation of PRIMARY KEY constraint")) {
@@ -108,8 +108,7 @@ app.post('/registerUser', function (req, res) {
         return new Promise(function (resolve, reject) {
             console.log("insert category*****");
             var allCategories = req.body.interest_types;
-            if(allCategories.length===0)
-            {
+            if (allCategories.length === 0) {
                 resolve("No interest types...");
             }
             var cotegoriesArr = allCategories.split(",");
@@ -123,7 +122,7 @@ app.post('/registerUser', function (req, res) {
             DButilsAzure.Insert(connection, query)
                 .then(function (answer) {
                     console.log(answer);
-                    resolve("interestTypes response: "+answer+", register response: "+response);
+                    resolve("interestTypes response: " + answer + ", register response: " + response);
                 })
                 .catch(function (reason) {
                     console.log("insert Category fail!");
@@ -133,19 +132,32 @@ app.post('/registerUser', function (req, res) {
         });
     }
 });
+
 //get all product
 app.get('/getAllProducts', function (req, res) {
-    DButilsAzure.Select(connection, 'Select * from Musical_instrument', function (result) {
-        res.send(result);
-        console.log(result);
-    });
+    var query = 'Select * from Musical_instrument'
+    DButilsAzure.Select(connection, query)
+        .then(function (ans) {
+            res.send(ans);
+            console.log("GetAllProduct response: " + JSON.stringify(ans));
+        })
+        .catch(function (reason) {
+            console.log("getAllProducts fail!");
+            res.send("getAllProducts fail!");
+        });
 });
 
 app.get('/getTop5Products', function (req, res) {
-    DButilsAzure.Select(connection, "SELECT TOP (5) * FROM Musical_instrument ORDER BY Sales_number DESC", function (result) {
-        res.send(result);
-        console.log(result);
-    });
+    var query = "SELECT TOP (5) * FROM Musical_instrument ORDER BY Sales_number DESC";
+    DButilsAzure.Select(connection, query)
+        .then(function (ans) {
+            res.send(ans);
+            console.log("getTop5Products response: " + JSON.stringify(ans));
+        })
+        .catch(function (reason) {
+            console.log("getTop5Products fail!");
+            res.send("getTop5Products fail!");
+        });
 });
 
 
@@ -154,29 +166,49 @@ app.post('/verifyUserAndRestorePass', function (req, res) {
     var email = req.body.mail;
     var firstPet = req.body.firstPet;
     var school = req.body.school;
-    DButilsAzure.Select(connection, squel.select()
+    var query = squel.select()
         .field("Password")
         .from("ClientsTable")
         .where("Mail = " + "'" + email + "'")
         .where("FirstPetName = " + "'" + firstPet + "'")
         .where("School = " + "'" + school + "'")
-        .toString(), function (result) {
-        res.send(result);
-        console.log(result);
-    });
+        .toString();
+    DButilsAzure.Select(connection, query)
+        .then(function (ans) {
+            if (ans.length === 0) {
+                res.send("wrong email or anwers!");
+                console.log("wrong email or anwers!");
+            }
+            else {
+                res.send(ans);
+                console.log("verifyUserAndRestorePass response: " + JSON.stringify(ans));
+            }
+        })
+        .catch(function (reason) {
+            console.log(reason + " ,verifyUserAndRestorePass fail!");
+            res.send("verifyUserAndRestorePass fail!");
+        });
+
 });
 
 //login
 app.post('/login', function (req, res, next) {
     var email = req.body.mail;
     var pass = req.body.pass;
-    var loginPromise = login(email, pass);
-    loginPromise.then(function (ans) {
-        res.send(ans);
-        console.log(ans);
-    })
+    var query = loginQuery(email, pass);
+    DButilsAzure.Select(connection, query)
+        .then(function (ans) {
+            if (ans.length === 0) {
+                res.send("wrong email or Password!");
+                console.log("wrong email or Password!");
+            }
+            else {
+                res.send(ans);   //send the mail back to the client
+                console.log("login response: " + JSON.stringify(ans));
+            }
+        })
         .catch(function (reason) {
-            console.log(reason);
+            console.log(reason + ", login fail!");
             res.send(reason);
         });
 });
@@ -184,25 +216,126 @@ app.post('/login', function (req, res, next) {
 //get only the product witch added the last 30 days
 app.get('/login', function (req, res, next) {
     //it is just a simple example without handling the answer
-    DButilsAzure.Select(connection, 'Select * from Musical_instrument where PublishDate >= DATEADD(DAY,+11,GETDATE())', function (result) {
+    DButilsAzure.Select(connection, 'Select * from Musical_instrument where PublishDate >= DATEADD(DAY,-,GETDATE())', function (result) {
         res.send(result);
         console.log(result);
     });
 });
 
-var login = function login(email, pass) {
-    return DButilsAzure.Select(connection, squel.select()
+function loginQuery(email, pass) {
+    return squel.select()
         .field("Mail")
         .from("ClientsTable")
         .where("Mail = " + "'" + email + "'")
         .where("Password = " + "'" + pass + "'")
-        .toString());
+        .toString();
 }
 
 var getLatestProduction = function (res) {
     return DButilsAzure.Select(connection, 'Select * from Musical_instrument where PublishDate >= DATEADD(DAY,-30,GETDATE())');
-
 }
 
+
+app.post('/buyProductsInCart', function (req, res) {
+    var totPrice = 0;
+    var orderId = 3;
+    var ordersQuery = "";
+    var queryProducts = "";
+    getDataFromInventory()
+        .then(insertToOrders)
+        .then(insertProductsToOrder)
+        .then(function (ans) {
+            res.send("buying completed");
+            console.log("buying completed");
+        })
+        .catch(function (reason) {
+            res.send("buying process failed" + reason);
+            console.log("buying completed failed" + reason);
+        });
+    function getDataFromInventory() {
+        return new Promise(function (resolve, reject) {
+            var arr = req.body;
+            queryProducts = "INSERT INTO ProductsInOrder (OrderID, ProductID, Amount) VALUES ";
+            arr.forEach(function (item) {
+                if (checkInInventory(item.productID, item.amount)) {
+                    totPrice = totPrice + (item.price * item.amount);
+                    queryProducts = queryProducts + "(" + "'" + orderId.toString() + "'," + "'" + item.productID + "' '" + item.amount + "'), ";
+                }
+            });
+            queryProducts = queryProducts.substring(0, query.length - 2) + ";";
+            ordersQuery = getOrderQuery(orderId, totPrice);
+        })
+    }
+
+    function insertToOrders(response) {
+        return new Promise(function (resolve, reject) {
+            DButilsAzure.Insert(connection, ordersQuery)
+                .then(function (ans) {
+                    res.send("insertToOrder completed");
+                    console.log("insertToOrder completed");
+                })
+                .catch(function (reason) {
+                    res.send("insertToOrder process failed" + reason);
+                    console.log("insertToOrder process failed" + reason);
+                });
+        });
+    }
+
+
+    function insertProductsToOrder(response) {
+        return new Promise(function (resolve, reject) {
+            DButilsAzure.Insert(connection, queryProducts)
+                .then(function (ans) {
+                    res.send("insertProductsToOrder completed");
+                    console.log("insertProductsToOrder completed");
+                })
+                .catch(function (reason) {
+                    res.send("insertProductsToOrder process failed" + reason);
+                    console.log("insertProductsToOrder process failed" + reason);
+                });
+        });
+    }
+})
+
+function checkInInventory(productID, amount) {
+    var query = squel.select()
+        .from("Musical_instrument")
+        .where("Musical_instrument = " + "'" + productID + "'")
+        .where("StockAmount >= " + "'" + amount + "'")
+        .toString();
+    DButilsAzure.Select(connection, query)
+        .then(function (answer) {
+            return true;
+        })
+        .catch(function (reason) {
+            console.log("check inventory failed!");
+            return false;
+        })
+}
+
+function getOrderQuery(orderID, totPrice) {
+    return squel.insert().into("Order")
+        .set('OrderID', orderID)
+        .set('ClientMail', "lir@lir")
+        .set('Time', "GETDATE()")
+        .set('TotalPrice', totPrice)
+        .set('Details', "Order details here...")
+        .toString();
+}
+
+// function getTotPrice(productID, amount){
+//     var query = squel.select()
+//         .field("Price")
+//         .from("Musical_instrument")
+//         .where("Musical_instrument = " + "'" + productID + "'")
+//         .toString();
+//     DButilsAzure.Select(connection,query)
+//         .then(function(answer){
+//             return (answer*amount);
+//         })
+//         .catch(function (reason) {
+//             console.log("get total price failed!");
+//         })
+// }
 
 module.exports = app;

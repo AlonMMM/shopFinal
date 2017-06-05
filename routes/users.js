@@ -1,6 +1,6 @@
 var express = require('express');
 var router = express.Router();
-var DButilsAzure = require('/shop/DBUtils');
+var DButilsAzure = require('/shop/DButils');
 var squel = require("squel");
 
 
@@ -22,11 +22,7 @@ router.post('/registerUser', function (req, res) {
         .set('FirstPetName', req.body.firstPet)
         .toString();
     DButilsAzure.Insert(query)
-        .then(function (ans) {
-            var insertCategoriesANS = insertCategories(allCategories,req.body.mail);
-            res.send(insertCategoriesANS + JSON.stringify(ans));
-            console.log("Register response:" + JSON.stringify(ans));
-        })
+        .then(insertCategories (null, allCategories, req.body.mail))
         .catch(function (reason) {
             if (reason.message.includes("Violation of PRIMARY KEY constraint")) {
                 console.log("Mail  already used! **");
@@ -37,11 +33,10 @@ router.post('/registerUser', function (req, res) {
                 res.send("Server Problem, register fail!");
             }
         });
-
 });
 
 
-function insertCategories(allCategories,mail) {
+function insertCategories(allCategories,mail, ans) {
     console.log("insert category*****");
     if (allCategories.length === 0) {
         return ("No interest types...");

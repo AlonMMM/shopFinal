@@ -1,17 +1,14 @@
 var express = require('express');
 var bodyParser = require('body-parser');
 var app = express();
-var Connection = require('tedious').Connection;
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(bodyParser.json());
 var cors = require('cors');
 app.use(cors());
-var DButilsAzure = require('./DBUtils');
+var DButilsAzure = require('./DButils');
 var squel = require("squel");
-var Request = require('tedious').Request;
-var TYPES = require('tedious').TYPES;
 
-var users = require('./routes/users');
+//var users = require('./routes/users');
 
 var path = require('path');
 var favicon = require('serve-favicon');
@@ -20,6 +17,8 @@ var cookieParser = require('cookie-parser');
 
 var index = require('./routes/index');
 var users = require('./routes/users');
+var musicalsInstruments = require('./routes/musicalsInstruments');
+var orders = require('./routes/orders');
 
 app.use(cors());
 // view engine setup
@@ -55,7 +54,8 @@ app.use(function (req, res, next) {
 
 //register request
 app.use('/users', users);
-app.use('/musicalsInstruments', users);
+app.use('/musicalsInstruments', musicalsInstruments);
+app.use('/orders', orders);
 
 //*******************Bonus part - Admins******************//
 //get all clients

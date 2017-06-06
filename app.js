@@ -298,7 +298,6 @@ function getOrderQuery(orderID, totPrice) {
         .set('Details', "Order details here...")
         .toString();
 }
-
 // function getTotPrice(productID, amount){
 //     var query = squel.select()
 //         .field("Price")
@@ -313,5 +312,6 @@ function getOrderQuery(orderID, totPrice) {
 //             console.log("get total price failed!");
 //         })
 // }
+
 
 module.exports = app;

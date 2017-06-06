@@ -1,6 +1,6 @@
 var express = require('express');
 var router = express.Router();
-var DButilsAzure = require('/shop/DButils');
+var DButilsAzure = require('C:/Users/Liron/IdeaProjects/shop/DButils');
 var squel = require("squel");
 
 
@@ -21,8 +21,12 @@ router.post('/registerUser', function (req, res) {
         .set('School', req.body.school)
         .set('FirstPetName', req.body.firstPet)
         .toString();
-    DButilsAzure.Insert(query)
-        .then(insertCategories (null, allCategories, req.body.mail))
+    DButilsAzure.Insert(connection, query)
+        .then(insertCategories(allCategories, req.body.mail, null))
+        .then(function (ans) {
+            res.send(ans);
+            console.log("ans is : *****" +ans);
+        })
         .catch(function (reason) {
             if (reason.message.includes("Violation of PRIMARY KEY constraint")) {
                 console.log("Mail  already used! **");
@@ -33,31 +37,36 @@ router.post('/registerUser', function (req, res) {
                 res.send("Server Problem, register fail!");
             }
         });
-});
 
+    function insertCategories(response) {
+        return new Promise(function (resolve, reject) {
+            console.log("insert category*****");
+            var allCategories = req.body.interest_types;
+            if(allCategories.length===0)
+            {
+                resolve("No interest types...");
+            }
+            var cotegoriesArr = allCategories.split(",");
+            var userMail = req.body.mail;
+            var query = "INSERT INTO Categories (ClientMail, CategoryName) VALUES ";
+            cotegoriesArr.forEach(function (category) {
+                query = query + "(" + "'" + userMail.toString() + "'," + "'" + category.toString() + "'), ";
+            });
+            query = query.substring(0, query.length - 2) + ";";
+            console.log("insert category: " + query);
+            DButilsAzure.Insert(connection, query)
+                .then(function (answer) {
+                    console.log(answer);
+                    resolve("interestTypes response: "+answer+", register response: "+response);
+                })
+                .catch(function (reason) {
+                    console.log("insert Category fail!");
+                    res.send("insert Category fail!");
+                });
 
-function insertCategories(allCategories,mail, ans) {
-    console.log("insert category*****");
-    if (allCategories.length === 0) {
-        return ("No interest types...");
-    }
-    var cotegoriesArr = allCategories.split(",");
-    var query = "INSERT INTO ClientCategories (ClientMail, CategoryName) VALUES ";
-    cotegoriesArr.forEach(function (category) {
-        query = query + "(" + "'" + mail.toString() + "'," + "'" + category.toString() + "'), ";
-    });
-    query = query.substring(0, query.length - 2) + ";";
-    console.log("insert category: " + query);
-    DButilsAzure.Insert(query)
-        .then(function (answer) {
-            console.log(answer);
-            return ("interestTypes response: " + answer + ", register response: ");
-        })
-        .catch(function (reason) {
-            console.log(reason+"insert Category fail!");
-            return ("insert Category fail!");
         });
-}
+    }
+});
 //restore pass by verify user
 router.post('/verifyUserAndRestorePass', function (req, res) {
     var email = req.body.mail;
@@ -120,3 +129,4 @@ function loginQuery(email, pass) {
         .toString();
 }
 module.exports = router;
+

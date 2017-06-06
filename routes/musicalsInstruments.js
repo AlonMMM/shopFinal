@@ -3,7 +3,7 @@
  */
 var express = require('express');
 var router = express.Router();
-var DButilsAzure = require('/shop/DButils');
+var DButilsAzure = require('C:/Users/Liron/IdeaProjects/shop/DButils');
 var squel = require("squel");
 
 router.get('/getAllProducts', function (req, res) {
@@ -64,4 +64,4 @@ router.post('/getProductDetails', function (req, res) {
 
 });
 
-
+module.exports = router;

@@ -1,6 +1,6 @@
 var express = require('express');
 var router = express.Router();
-var DButilsAzure = require('/shop/DBUtils');
+var DButilsAzure = require('../DBUtils');
 var squel = require("squel");
 
 

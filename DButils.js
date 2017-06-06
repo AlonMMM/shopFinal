@@ -24,7 +24,7 @@ connection.on('connect', function (err) {
 
 //----------------------------------------------------------------------------------------------------------------------
 
-exports.Select = function(query, callback) {
+exports.Select = function(query) {
     return new Promise(function (resolve,reject) {
         var req = new Request(query, function (err, rowCount) {
             if (err) {
@@ -61,7 +61,7 @@ exports.Select = function(query, callback) {
     });
 };
 
-exports.Insert = function( query, callback) {
+exports.Insert = function( query) {
     return new Promise(function (resolve,reject) {
         console.log("Insert **");
         console.log("**Query is: " + query + " **");
@@ -79,21 +79,39 @@ exports.Insert = function( query, callback) {
     });
 };
 
-exports.Delete = function( query) {
+exports.Delete = function(query) {
     return new Promise(function (resolve, reject) {
         console.log("Delete **");
         console.log("**Query is: " + query + " **");
-        var insert = new Request(query, function (err, rowCount) {
+        var Delete = new Request(query, function (err, rowCount) {
             if (err) {
-                if(err.message.includes)
+                if(err.message)
                 console.log(err);
                 reject(err);
             }
         });
-        insert.on('requestCompleted', function () {
+        Delete.on('requestCompleted', function () {
             console.log("Delete completed**");
             resolve(true);
         });
-        connection.execSql(insert);
+        connection.execSql(Delete);
     });
 }
+
+exports.Update = function( query) {
+    return new Promise(function (resolve,reject) {
+        console.log("Update **");
+        console.log("**Query is: " + query + " **");
+        var Update = new Request(query, function (err, rowCount) {
+            if (err) {
+                console.log(err);
+                reject(err);
+            }
+        });
+        Update.on('requestCompleted', function () {
+            console.log('requestCompleted with ' + Update.rowCount + ' row(s)');
+            resolve("requestCompleted with " + Update.rowCount +  "row(s)");
+        });
+        connection.execSql(Update);
+    });
+};

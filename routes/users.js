@@ -23,9 +23,14 @@ router.post('/registerUser', function (req, res) {
         .toString();
     DButilsAzure.Insert(query)
         .then(function (ans) {
-            var insertCategoriesANS = insertCategories(allCategories,req.body.mail);
-            res.send(insertCategoriesANS + JSON.stringify(ans));
-            console.log("Register response:" + JSON.stringify(ans));
+            var insertCategoriesPromise = insertCategories(allCategories, req.body.mail);
+            insertCategoriesPromise.then(function (ans1){
+                res.send("Register response:" + ans + "\n"+ans1);
+                console.log("Register response:" + ans + "\n"+ans1);
+            },function (reason) {
+                res.send(reason);
+                console.log(reason);
+            });
         })
         .catch(function (reason) {
             if (reason.message.includes("Violation of PRIMARY KEY constraint")) {
@@ -37,31 +42,34 @@ router.post('/registerUser', function (req, res) {
                 res.send("Server Problem, register fail!");
             }
         });
-
 });
 
-
-function insertCategories(allCategories,mail) {
-    console.log("insert category*****");
-    if (allCategories.length === 0) {
-        return ("No interest types...");
-    }
-    var cotegoriesArr = allCategories.split(",");
-    var query = "INSERT INTO ClientCategories (ClientMail, CategoryName) VALUES ";
-    cotegoriesArr.forEach(function (category) {
-        query = query + "(" + "'" + mail.toString() + "'," + "'" + category.toString() + "'), ";
-    });
-    query = query.substring(0, query.length - 2) + ";";
-    console.log("insert category: " + query);
-    DButilsAzure.Insert(query)
-        .then(function (answer) {
-            console.log(answer);
-            return ("interestTypes response: " + answer + ", register response: ");
-        })
-        .catch(function (reason) {
-            console.log(reason+"insert Category fail!");
-            return ("insert Category fail!");
-        });
+//help function to add caregories to the user.
+function insertCategories(allCategories, mail) {
+    return new Promise(function (resolve, reject) {
+        console.log("insert category*****");
+        if (allCategories.length === 0) {
+            resolve("No interest types...");
+        }
+        else {
+            var cotegoriesArr = allCategories.split(",");
+            var query = "INSERT INTO ClientCategories (Mail, CategoryName) VALUES ";
+            cotegoriesArr.forEach(function (category) {
+                query = query + "(" + "'" + mail.toString() + "'," + "'" + category.toString() + "'), ";
+            });
+            query = query.substring(0, query.length - 2) + ";";
+            console.log("insert category: " + query);
+            DButilsAzure.Insert(query)
+                .then(function (answer) {
+                    console.log(answer);
+                    resolve("insert Category response: " + answer);
+                })
+                .catch(function (reason) {
+                    console.log(reason + "insert Category fail!");
+                    reject("insert Category fail!");
+                });
+        }
+    })
 }
 //restore pass by verify user
 router.post('/verifyUserAndRestorePass', function (req, res) {
@@ -92,36 +100,8 @@ router.post('/verifyUserAndRestorePass', function (req, res) {
         });
 
 });
-
-//login
-router.post('/login', function (req, res, next) {
-    var email = req.body.mail;
-    var pass = req.body.pass;
-    var query = loginQuery(email, pass);
-    DButilsAzure.Select(query)
-        .then(function (ans) {
-            if (ans.length === 0) {
-                res.send("wrong email or Password!");
-                console.log("wrong email or Password!");
-            }
-            else {
-                res.send(ans);   //send the mail back to the client
-                console.log("login response: " + JSON.stringify(ans));
-            }
-        })
-        .catch(function (reason) {
-            console.log(reason + ", login fail!");
-            res.send(reason);
-        });
-});
-
-//login query
-function loginQuery(email, pass) {
-    return squel.select()
-        .field("Mail")
-        .from("ClientsTable")
-        .where("Mail = " + "'" + email + "'")
-        .where("Password = " + "'" + pass + "'")
-        .toString();
-}
 module.exports = router;
+
+
+
+

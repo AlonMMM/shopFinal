@@ -62,7 +62,4 @@ router.post('/getProductDetails', function (req, res) {
 
 });
 
-
-
-
 module.exports = router;

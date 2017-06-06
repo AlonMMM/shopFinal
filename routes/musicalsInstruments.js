@@ -1,9 +1,7 @@
-/**
- * Created by windows on 05/06/2017.
- */
+
 var express = require('express');
 var router = express.Router();
-var DButilsAzure = require('/shop/DBUtils');
+var DButilsAzure = require('/shop/DButils');
 var squel = require("squel");
 
 router.get('/getAllProducts', function (req, res) {
@@ -14,20 +12,20 @@ router.get('/getAllProducts', function (req, res) {
             console.log("GetAllProduct response: " + JSON.stringify(ans));
         })
         .catch(function (reason) {
-            console.log("getAllProducts fail!");
+            console.log("getAllProducts fail!"+reason);
             res.send("getAllProducts fail!");
         });
 });
 
 router.get('/getTop5Products', function (req, res) {
     var query = "SELECT TOP (5) * FROM Musical_instrument ORDER BY Sales_number DESC";
-    DButilsAzure.Select(connection, query)
+    DButilsAzure.Select(query)
         .then(function (ans) {
             res.send(ans);
             console.log("getTop5Products response: " + JSON.stringify(ans));
         })
         .catch(function (reason) {
-            console.log("getTop5Products fail!");
+            console.log("getTop5Products fail!"+reason);
             res.send("getTop5Products fail!");
         });
 });
@@ -35,14 +33,14 @@ router.get('/getTop5Products', function (req, res) {
 router.get('/latestProducts', function (req, res) {
     //it is just a simple example without handling the answer
     var query = 'Select * from Musical_instrument where PublishDate >= DATEADD(DAY,-30,GETDATE())';
-    DButilsAzure.Select(connection, query)
+    DButilsAzure.Select(query)
         .then(function (ans) {
             res.send(ans);
             console.log("latestProducts response: " + ans);
         })
         .catch(function (reason) {
-            console.log(reason + ", Get latestProducts fail!");
-            res.send(reason);
+            console.log("Get latestProducts fail!"+reason);
+            res.send("Get latestProducts fail!");
         });
 });
 
@@ -52,16 +50,19 @@ router.post('/getProductDetails', function (req, res) {
         .from("Musical_instrument")
         .where("Musical_instrument = " + "'" + instrumentID + "'")
         .toString();
-    DButilsAzure.Select(connection, query)
+    DButilsAzure.Select(query)
         .then(function (ans) {
             res.send(ans);
             console.log("latestProducts response: " + ans);
         })
         .catch(function (reason) {
-            console.log(reason + ", getProductDetails fail!");
-            res.send(reason);
+            console.log("getProductDetails fail!" + reason);
+            res.send("getProductDetails fail!");
         });
 
 });
 
 
+
+
+module.exports = router;

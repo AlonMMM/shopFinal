@@ -3,7 +3,7 @@
  */
 var express = require('express');
 var router = express.Router();
-var DButilsAzure = require('/Users/Liron/IdeaProjects/shop/DButils');
+var DButilsAzure = require('/shop/DButils');
 var squel = require("squel");
 
 

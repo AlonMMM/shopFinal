@@ -8,26 +8,38 @@ var squel = require("squel");
 
 
 router.post('/checkInInventory', function (req, res) {
-    var query = squel.select()
-        .from("Musical_instrument")
-        .where("Musical_instrument = " + "'" + req.body.instrumentID + "'")
-        .where("StockAmount >= " + "'" + req.body.amount + "'")
-        .toString();
+    if (Object.keys(req.body).length===0)
+        res.send(false);
+    var query = getQueryCheckInventory(req.body);
+    console.log("length of req "+ Object.keys(req.body).length);
     DButilsAzure.Select(query)
         .then(function (ans) {
-            if (ans.length != 0) {
-                res.send("There is what you wanted in the inventory! ");
+            console.log("length of ans "+ans.length);
+            if (Object.keys(req.body).length!= 0 && ans.length === Object.keys(req.body).length) {
+                res.send(true);
                 console.log("There is what the client wanted! checking inventory response: " + JSON.stringify(ans));
             }
             else {
-                res.send("There product you requested is not available or there isn't enough of it! ");
+                res.send(ans);
             }
         })
         .catch(function (reason) {
             console.log("checking inventory failed or the it isnt available " + reason);
-            res.send("Inventory check failed ");
+            res.send(false);
         })
 });
+
+function getQueryCheckInventory(products) {
+    //if enterd empty array, fail the check
+    if (products.length==0)
+        return null;
+    var queryProducts = "SELECT Musical_instrument FROM Musical_instrument WHERE  ";
+    products.forEach(function (item) {
+        queryProducts = queryProducts + "(Musical_instrument = " + "'" + item.instrumentID + "' AND StockAmount >= " + "'" + item.amount + "') OR ";
+    })
+    queryProducts = queryProducts.substring(0, queryProducts.length - 4) + ";";
+    return queryProducts;
+}
 
 router.post('/buyProductsInCart', function (req, res) {
     var arr = req.body.products;
@@ -90,27 +102,39 @@ function getQueryProductsInOrder(products, orderID) {
 }
 
 router.post('/approveBuying', function (req, res) {
-    var invQuery = squel.update()
-        .table("Musical_instrument")
-        .set("StockAmount = StockAmount -" + "'" + req.body.amount + "'")
-        .set(" Sales_number =  Sales_number +" + "'" + req.body.amount + "'")
-        .where("Musical_instrument = " + "'" + req.body.instrumentID + "'")
-        .toString();
+    if (Object.keys(req.body).length===0)
+        res.send(false);
+    var invQuery = getQueryApproveBuying(req.body);
     DButilsAzure.Update(invQuery)
         .then(function (ans) {
-            res.send("Your order has been approved and finished! ");
+            res.send(true);
             console.log("The inventory updated according to the order made: " + JSON.stringify(ans));
         })
         .catch(function (reason) {
-            res.send("Updating inventory according to your order failed!");
+            res.send(false);
             console.log("Updating inventory according the order failed! " + reason);
         });
 })
 
-router.get('/getOrderHistory', function (req ,res){
-    var mail= req.body.mail;
-
-})
+function getQueryApproveBuying (products) {
+    //if enterd empty array, fail the check
+    if (products.length==0)
+        return null;
+    var queryProducts = "UPDATE Musical_instrument SET StockAmount = CASE Musical_instrument ";
+    products.forEach(function (item) {
+        queryProducts = queryProducts + "WHEN '" + item.instrumentID + "' THEN StockAmount -" + "'" +item.amount+ "' ";
+    })
+    queryProducts = queryProducts.substring(0, queryProducts.length - 1) + "END, Sales_number = CASE Musical_instrument ";
+    products.forEach(function (item) {
+        queryProducts = queryProducts + "WHEN '" + item.instrumentID + "' THEN Sales_number +" + "'" +item.amount+ "' ";
+    })
+    queryProducts = queryProducts.substring(0, queryProducts.length - 1) + "END WHERE Musical_instrument IN (";
+    products.forEach(function (item) {
+        queryProducts = queryProducts +"'"+ item.instrumentID + "',";
+    })
+     queryProducts = queryProducts.substring(0, queryProducts.length - 1) + ")";
+    return queryProducts;
+}
 
 router.post('/getProductsInOneOrder', function (req, res) {
     var query = squel.select()
@@ -129,6 +153,7 @@ router.post('/getProductsInOneOrder', function (req, res) {
 })
 
 router.post('/getOrderHistory', function (req, res) {
+
     var query = squel.select()
         .from("[Order]")
         .where("ClientMail = " + "'" + req.body.mail + "'")

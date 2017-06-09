@@ -1,6 +1,4 @@
-/**
- * Created by Liron on 05/06/2017.
- */
+
 var express = require('express');
 var router = express.Router();
 var DButilsAzure = require('../DButils');

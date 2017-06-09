@@ -3,7 +3,7 @@
  */
 var express = require('express');
 var router = express.Router();
-var DButilsAzure = require('/shop/DButils');
+var DButilsAzure = require('../DButils');
 var squel = require("squel");
 
 
@@ -107,4 +107,40 @@ router.post('/approveBuying', function (req, res) {
         });
 })
 
+router.get('/getOrderHistory', function (req ,res){
+    var mail= req.body.mail;
+
+})
+
+router.post('/getProductsInOneOrder', function (req, res) {
+    var query = squel.select()
+        .from("ProductInOrder")
+        .where("OrderID = " + "'" + req.body.orderID + "'")
+        .toString();
+    DButilsAzure.Select(query)
+        .then(function (ans) {
+        res.send(ans);
+        console.log("Products in Order: " + JSON.stringify(ans));
+    })
+        .catch(function (reason) {
+            res.send("Watch products in order failed!");
+            console.log("Watch products in order failed! " + reason);
+        });
+})
+
+router.post('/getOrderHistory', function (req, res) {
+    var query = squel.select()
+        .from("[Order]")
+        .where("ClientMail = " + "'" + req.body.mail + "'")
+        .toString();
+    DButilsAzure.Select(query)
+        .then(function (ans) {
+            res.send(ans);
+            console.log("User's order history : " + JSON.stringify(ans));
+        })
+        .catch(function (reason) {
+            res.send("Watch user Orders failed!");
+            console.log("Watch user Orders failed! " + reason);
+        });
+})
 module.exports = router;

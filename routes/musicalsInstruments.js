@@ -1,7 +1,7 @@
 
 var express = require('express');
 var router = express.Router();
-var DButilsAzure = require('/shop/DButils');
+var DButilsAzure = require('../DButils');
 var squel = require("squel");
 
 router.get('/getAllProducts', function (req, res) {

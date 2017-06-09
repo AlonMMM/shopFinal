@@ -46,7 +46,7 @@ router.post('/addProduct', function (req, res) {
 function addProductQ(req) {
     return squel.insert().into("Musical_instrument")
         .set('Musical_instrument', req.body.instrumentID)
-        .set('ManufacturID', req.body.manufacturID)
+        .set('Manufactur', req.body.manufactur)
         .set('Year', req.body.year)
         .set('Description', req.body.description)
         .set('PicturePath', req.body.picturePath)
@@ -109,13 +109,15 @@ router.delete('/deleteUser', function (req, res) {
     var secondaryTable = "ClientCategories";
     var instrumentID = req.body.mail;
     var deleteFromSeconedTablePromise = deleteFromTable(instrumentID, secondaryTable, instrumentName);
-    deleteFromSeconedTablePromise.then(function (ans) {
+    deleteFromSeconedTablePromise
+        .then(function (ans) {
         var deleteFromMainTablePromise = deleteFromTable(instrumentID, mainTable, instrumentName);
         deleteFromMainTablePromise
             .then(function (ans1) {
-                res.send("deleteUser response:" + ans);
-                console.log("deleteUser response:" + true);
-            }, function (reason) {
+                res.send("deleteUser response:" + ans1);
+                console.log("deleteUser response: " + ans +", "+ ans1);
+            })
+                .catch(function (reason) {
                 res.send(reason);
                 console.log(reason);
             });
@@ -132,7 +134,8 @@ router.delete('/deleteProduct', function (req, res) {
     var secondaryTable = "InstrumentCategory";
     var instrumentID = req.body.instrumentID;
     var deleteFromSeconedTablePromise = deleteFromTable(instrumentID, secondaryTable, instrumentName);
-    deleteFromSeconedTablePromise.then(function (ans) {
+    deleteFromSeconedTablePromise
+        .then(function (ans) {
         var deleteFromMainTablePromise = deleteFromTable(instrumentID, mainTable, instrumentName);
         deleteFromMainTablePromise
             .then(function (ans1) {
@@ -158,12 +161,13 @@ function deleteFromTable(instrumentID, tableName, instrumentName) {
             .toString();
         DButilsAzure.Delete(deleteQueryFromMailTable)
             .then(function (ans) {
-                console.log("deleteFromTable resolve");
-                resolve(true);
+                console.log("deleteFromTable resolve "+ans);
+                resolve(ans);
             })
             .catch(function (reason) {
+
                 console.log("deleteFromTable reject");
-                reject(false);
+                reject(reason);
             });
     });
 }

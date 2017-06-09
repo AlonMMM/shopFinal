@@ -98,6 +98,45 @@ router.post('/verifyUserAndRestorePass', function (req, res) {
             console.log(reason + " ,verifyUserAndRestorePass fail!");
             res.send("verifyUserAndRestorePass fail!");
         });
+});
+
+router.post('/getMatchProduct', function (req, res) {
+    var email = req.body.mail;
+
+    //to knew if the user buy the product alredy.
+    var notByProductQuery = "SELECT ProductID FROM" +
+        " ProductInOrder po INNER JOIN" +
+        "(SELECT * FROM [Order] WHERE Mail = " + "'" + email + "') c " +
+        "ON (po.OrderID = c.OrderID)";
+
+    //show the  product witch match to the user categories.
+    var productInFavorCategory = "SELECT Musical_instrument FROM" +
+        " InstrumentCategory mi INNER JOIN" +
+        "(SELECT * FROM ClientCategories WHERE Mail = " + "'" + email + "') c " +
+        "ON (mi.CategoryName = c.CategoryName) WHERE Musical_instrument NOT IN("+notByProductQuery+")";
+
+    //return only the top 5 "hotest product".
+    var favorProduct = "SELECT TOP (5) * FROM Musical_instrument mi1 INNER JOIN " +
+        "("+productInFavorCategory+") mi2 ON (mi1.Musical_instrument = mi2.Musical_instrument)" +
+        " ORDER BY Sales_number DESC";
+
+    console.log(favorProduct);
+    DButilsAzure.Select(favorProduct)
+        .then(function (ans) {
+            if (ans.length === 0) {
+                res.send("No match product for you !");
+                console.log("No match product for you !");
+            }
+            else {
+                res.send(ans);
+                console.log("getMatchProduct response: " + JSON.stringify(ans));
+            }
+        })
+        .catch(function (reason) {
+            console.log(reason + " ,getMatchProduct fail!");
+            res.send("getMatchProduct fail!");
+        });
+
 
 });
 module.exports = router;

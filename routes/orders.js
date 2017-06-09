@@ -13,7 +13,7 @@ router.post('/checkInInventory', function (req, res) {
     DButilsAzure.Select(query)
         .then(function (ans) {
             console.log("length of ans "+ans.length);
-            if (Object.keys(req.body).length!= 0 && ans.length === Object.keys(req.body).length) {
+            if (Object.keys(req.body).length!== 0 && ans.length === Object.keys(req.body).length) {
                 res.send(true);
                 console.log("There is what the client wanted! checking inventory response: " + JSON.stringify(ans));
             }
@@ -29,7 +29,7 @@ router.post('/checkInInventory', function (req, res) {
 
 function getQueryCheckInventory(products) {
     //if enterd empty array, fail the check
-    if (products.length==0)
+    if (products.length===0)
         return null;
     var queryProducts = "SELECT Musical_instrument FROM Musical_instrument WHERE  ";
     products.forEach(function (item) {

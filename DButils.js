@@ -10,9 +10,9 @@ var config = {
     options: {encrypt: true, database: 'shope_nd'}
 };
 
-connection = new Connection(config);
+Connection = new Connection(config);
 var connected = false;
-connection.on('connect', function (err) {
+Connection.on('connect', function (err) {
     if (err) {
         console.error('error connecting: ' + err.message);
     }
@@ -57,7 +57,7 @@ exports.Select = function(query) {
             resolve(ans);
         });
 
-        connection.execSql(req);
+        Connection.execSql(req);
     });
 };
 
@@ -75,28 +75,33 @@ exports.Insert = function( query) {
             console.log('requestCompleted with ' + insert.rowCount + ' row(s)');
             resolve("requestCompleted with " + insert.rowCount +  "row(s)");
         });
-        connection.execSql(insert);
+        Connection.execSql(insert);
     });
 };
 
-exports.Delete = function(query) {
+exports.Delete = function (query) {
     return new Promise(function (resolve, reject) {
         console.log("Delete **");
         console.log("**Query is: " + query + " **");
-        var Delete = new Request(query, function (err, rowCount) {
+        var Delete = new Request(query, function (err) {
             if (err) {
-                if(err.message)
-                console.log(err);
+                console.log(err.message);
                 reject(err);
             }
         });
         Delete.on('requestCompleted', function () {
-            console.log("Delete completed**");
-            resolve(true);
+            if(Delete.rowCount===0){
+                resolve("item not exist");
+            }
+            else {
+                console.log("Delete completed with " + Delete + " rows");
+                resolve("requestCompleted with " + Delete.rowCount + "row(s)");
+            }
         });
-        connection.execSql(Delete);
+        Connection.execSql(Delete);
     });
-}
+};
+
 
 exports.Update = function( query) {
     return new Promise(function (resolve,reject) {
@@ -112,6 +117,6 @@ exports.Update = function( query) {
             console.log('requestCompleted with ' + Update.rowCount + ' row(s)');
             resolve("requestCompleted with " + Update.rowCount +  "row(s)");
         });
-        connection.execSql(Update);
+        Connection.execSql(Update);
     });
 };

@@ -185,7 +185,20 @@ router.get('/getInventory', function (req, res) {
         });
 });
 
-
+router.get('/getOrdersReport', function (req, res) {
+    var query = squel.select()
+        .from("[Order]")
+        .toString();
+    DButilsAzure.Select(query)
+        .then(function (ans) {
+            res.send(ans);
+            console.log("All orders  : " + JSON.stringify(ans));
+        })
+        .catch(function (reason) {
+            res.send("Get all Orders failed!");
+            console.log("Get all Orders failed! " + reason);
+        });
+});
 
 
 module.exports = router;

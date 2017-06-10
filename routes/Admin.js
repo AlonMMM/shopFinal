@@ -12,7 +12,7 @@ router.post('/addProduct', function (req, res) {
     var instrumentID = req.body.instrumentID;
     var caregory = req.body.categoryName;
     var query = addProductQ(req);
-    DButilsAzure.Select(query)
+    DButilsAzure.Insert(query)
         .then(function (ans) {
             var insertCategoryPtomise = insertProductCategory(instrumentID, caregory);
             insertCategoryPtomise.then(function (ans1) {
@@ -197,6 +197,22 @@ router.get('/getOrdersReport', function (req, res) {
         .catch(function (reason) {
             res.send("Get all Orders failed!");
             console.log("Get all Orders failed! " + reason);
+        });
+});
+
+
+router.get('/getAllClients', function (req, res) {
+    var query = squel.select()
+        .from("ClientsTable")
+        .toString();
+    DButilsAzure.Select(query)
+        .then(function (ans) {
+            res.send(ans);
+            console.log("All Clients  : " + JSON.stringify(ans));
+        })
+        .catch(function (reason) {
+            res.send("Get all Clients failed!");
+            console.log("Get all Clients failed! " + reason);
         });
 });
 

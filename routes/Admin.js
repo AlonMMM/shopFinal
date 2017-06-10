@@ -216,5 +216,7 @@ router.get('/getAllClients', function (req, res) {
         });
 });
 
-
+router.post('/addUser', function(req, res) {
+    res.redirect(307, '/users/registerUser');
+});
 module.exports = router;

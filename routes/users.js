@@ -106,7 +106,7 @@ router.post('/getMatchProduct', function (req, res) {
     //to knew if the user buy the product alredy.
     var notByProductQuery = "SELECT ProductID FROM" +
         " ProductInOrder po INNER JOIN" +
-        "(SELECT * FROM [Order] WHERE Mail = " + "'" + email + "') c " +
+        "(SELECT * FROM [Order] WHERE ClientMail = " + "'" + email + "') c " +
         "ON (po.OrderID = c.OrderID)";
 
     //show the  product witch match to the user categories.
@@ -124,8 +124,8 @@ router.post('/getMatchProduct', function (req, res) {
     DButilsAzure.Select(favorProduct)
         .then(function (ans) {
             if (ans.length === 0) {
-                res.send("No match product for you !");
-                console.log("No match product for you !");
+                res.send("There is no such a user or No match product for you !");
+                console.log("There is no such a user or No match product for you !");
             }
             else {
                 res.send(ans);

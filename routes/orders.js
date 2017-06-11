@@ -141,8 +141,15 @@ router.post('/getProductsInOneOrder', function (req, res) {
         .toString();
     DButilsAzure.Select(query)
         .then(function (ans) {
-        res.send(ans);
-        console.log("Products in Order: " + JSON.stringify(ans));
+            if(ans.length===0)
+            {
+                res.send("Admin may delete all the product in this order");
+                console.log("Products in Order: " + JSON.stringify(ans));
+            }
+            else {
+                res.send(ans);
+                console.log("Products in Order: " + JSON.stringify(ans));
+            }
     })
         .catch(function (reason) {
             res.send("Watch products in order failed!");
@@ -166,4 +173,6 @@ router.post('/getOrderHistory', function (req, res) {
             console.log("Watch user Orders failed! " + reason);
         });
 })
+
 module.exports = router;
+

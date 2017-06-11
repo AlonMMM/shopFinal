@@ -110,18 +110,18 @@ router.delete('/deleteUser', function (req, res) {
     var instrumentID = req.body.mail;
     var deleteFromSeconedTablePromise = deleteFromTable(instrumentID, secondaryTable, instrumentName);
     deleteFromSeconedTablePromise
-        .then(function (ans) {
-        var deleteFromMainTablePromise = deleteFromTable(instrumentID, mainTable, instrumentName);
-        deleteFromMainTablePromise
-            .then(function (ans1) {
-                res.send("deleteUser response:" + ans1);
-                console.log("deleteUser response: " + ans +", "+ ans1);
-            })
+        .then(function (ans1) {
+            var deleteFromMainTablePromise = deleteFromTable(instrumentID, mainTable, instrumentName);
+            deleteFromMainTablePromise
+                .then(function (ans3) {
+                    res.send("deleteUser response:" + ans1);
+                    console.log("deleteUser response: " + ans1 + ", " + ans2 + ", " + ans3);
+                })
                 .catch(function (reason) {
-                res.send(reason);
-                console.log(reason);
-            });
-    })
+                    res.send(reason);
+                    console.log(reason);
+                });
+        })
         .catch(function (reason) {
             console.log("Response deleteUser ERROR: " + reason);
             res.send("Response deleteUser ERROR: " + reason);
@@ -136,16 +136,16 @@ router.delete('/deleteProduct', function (req, res) {
     var deleteFromSeconedTablePromise = deleteFromTable(instrumentID, secondaryTable, instrumentName);
     deleteFromSeconedTablePromise
         .then(function (ans) {
-        var deleteFromMainTablePromise = deleteFromTable(instrumentID, mainTable, instrumentName);
-        deleteFromMainTablePromise
-            .then(function (ans1) {
-                res.send("deleteProduct response:" + ans);
-                console.log("deleteProduct response:" + true);
-            }, function (reason) {
-                res.send(reason);
-                console.log(reason);
-            });
-    })
+            var deleteFromMainTablePromise = deleteFromTable(instrumentID, mainTable, instrumentName);
+            deleteFromMainTablePromise
+                .then(function (ans1) {
+                    res.send("deleteProduct response:" + ans);
+                    console.log("deleteProduct response:" + true);
+                }, function (reason) {
+                    res.send(reason);
+                    console.log(reason);
+                });
+        })
         .catch(function (reason) {
             console.log("Response deleteProduct ERROR: " + reason);
             res.send("Response deleteProduct ERROR: " + reason);
@@ -161,7 +161,7 @@ function deleteFromTable(instrumentID, tableName, instrumentName) {
             .toString();
         DButilsAzure.Delete(deleteQueryFromMailTable)
             .then(function (ans) {
-                console.log("deleteFromTable resolve "+ans);
+                console.log("deleteFromTable resolve " + ans);
                 resolve(ans);
             })
             .catch(function (reason) {
@@ -176,12 +176,12 @@ router.get('/getInventory', function (req, res) {
     var query = "SELECT Musical_instrument,StockAmount FROM Musical_instrument";
     DButilsAzure.Select(query)
         .then(function (ans) {
-            console.log("Response getInventory :"+ JSON.stringify(ans));
+            console.log("Response getInventory :" + JSON.stringify(ans));
             res.send(ans);
         })
         .catch(function (reason) {
-            console.log("Response getInventory ERROR :"+reason);
-            res.send("Response getInventory ERROR :"+reason);
+            console.log("Response getInventory ERROR :" + reason);
+            res.send("Response getInventory ERROR :" + reason);
         });
 });
 
@@ -216,7 +216,7 @@ router.get('/getAllClients', function (req, res) {
         });
 });
 
-router.post('/addUser', function(req, res) {
+router.post('/addUser', function (req, res) {
     res.redirect(307, '/users/registerUser');
 });
 module.exports = router;

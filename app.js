@@ -36,6 +36,8 @@ app.use('/', index);
 
 
 //*****************************************************************************************
+
+app.locals.users = {};
 //start listen
 app.listen(3100, function () {
     console.log('I am listening on localhost:3100');
@@ -67,8 +69,12 @@ app.post('/login', function (req, res, next) {
                 console.log("wrong email or Password!");
             }
             else {
-                res.send(ans);   //send the mail back to the client
-                console.log("login response: " + JSON.stringify(ans));
+                var token = generateToken(ans);
+                console.log("**************************************************Token is:"+token+"   user: "+email);
+                app.locals.users[email] = token;
+                console.log("login response: " + token);
+                res.json(token);
+                //res.send(ans);   //send the mail back to the client
             }
         })
         .catch(function (reason) {
@@ -85,6 +91,23 @@ function loginQuery(email, pass) {
         .where("Mail = " + "'" + email + "'")
         .where("Password = " + "'" + pass + "'")
         .toString();
+}
+
+exports.checkLogin =  function checkLogin(req) {
+    var token = req.headers["my-token"];
+    var user = req.headers["user"];
+    if (!token || !user)
+        return false;
+    var validToken = app.locals.users[user];
+    if (validToken == token)
+        return true;
+    else
+        return false;
+}
+
+function generateToken(user) {
+    var token = Math.floor(Math.random()*1000000);
+    return token;
 }
 
 module.exports = app;

@@ -1,6 +1,7 @@
 var express = require('express');
 var router = express.Router();
 var DButilsAzure = require('../DBUtils');
+var appTools = require("../app");
 var squel = require("squel");
 
 
@@ -101,43 +102,47 @@ router.post('/verifyUserAndRestorePass', function (req, res) {
 });
 
 router.post('/getMatchProduct', function (req, res) {
-    var email = req.body.mail;
+    if (!appTools.checkLogin(req)) {
+        console.log("--------- NOT LOGED-IN-------");
+        res.send("no permission");
+    }
+    else {
+        var email = req.body.mail;
 
-    //to knew if the user buy the product alredy.
-    var notByProductQuery = "SELECT ProductID FROM" +
-        " ProductInOrder po INNER JOIN" +
-        "(SELECT * FROM [Order] WHERE ClientMail = " + "'" + email + "') c " +
-        "ON (po.OrderID = c.OrderID)";
+        //to knew if the user buy the product alredy.
+        var notByProductQuery = "SELECT ProductID FROM" +
+            " ProductInOrder po INNER JOIN" +
+            "(SELECT * FROM [Order] WHERE ClientMail = " + "'" + email + "') c " +
+            "ON (po.OrderID = c.OrderID)";
 
-    //show the  product witch match to the user categories.
-    var productInFavorCategory = "SELECT Musical_instrument FROM" +
-        " InstrumentCategory mi INNER JOIN" +
-        "(SELECT * FROM ClientCategories WHERE Mail = " + "'" + email + "') c " +
-        "ON (mi.CategoryName = c.CategoryName) WHERE Musical_instrument NOT IN("+notByProductQuery+")";
+        //show the  product witch match to the user categories.
+        var productInFavorCategory = "SELECT Musical_instrument FROM" +
+            " InstrumentCategory mi INNER JOIN" +
+            "(SELECT * FROM ClientCategories WHERE Mail = " + "'" + email + "') c " +
+            "ON (mi.CategoryName = c.CategoryName) WHERE Musical_instrument NOT IN(" + notByProductQuery + ")";
 
-    //return only the top 5 "hotest product".
-    var favorProduct = "SELECT TOP (5) * FROM Musical_instrument mi1 INNER JOIN " +
-        "("+productInFavorCategory+") mi2 ON (mi1.Musical_instrument = mi2.Musical_instrument)" +
-        " ORDER BY Sales_number DESC";
+        //return only the top 5 "hotest product".
+        var favorProduct = "SELECT TOP (5) * FROM Musical_instrument mi1 INNER JOIN " +
+            "(" + productInFavorCategory + ") mi2 ON (mi1.Musical_instrument = mi2.Musical_instrument)" +
+            " ORDER BY Sales_number DESC";
 
-    console.log(favorProduct);
-    DButilsAzure.Select(favorProduct)
-        .then(function (ans) {
-            if (ans.length === 0) {
-                res.send("There is no such a user or No match product for you !");
-                console.log("There is no such a user or No match product for you !");
-            }
-            else {
-                res.send(ans);
-                console.log("getMatchProduct response: " + JSON.stringify(ans));
-            }
-        })
-        .catch(function (reason) {
-            console.log(reason + " ,getMatchProduct fail!");
-            res.send("getMatchProduct fail!");
-        });
-
-
+        console.log(favorProduct);
+        DButilsAzure.Select(favorProduct)
+            .then(function (ans) {
+                if (ans.length === 0) {
+                    res.send("There is no such a user or No match product for you !");
+                    console.log("There is no such a user or No match product for you !");
+                }
+                else {
+                    res.send(ans);
+                    console.log("getMatchProduct response: " + JSON.stringify(ans));
+                }
+            })
+            .catch(function (reason) {
+                console.log(reason + " ,getMatchProduct fail!");
+                res.send("getMatchProduct fail!");
+            });
+    }
 });
 module.exports = router;
 

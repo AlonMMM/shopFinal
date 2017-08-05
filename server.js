@@ -1,10 +1,10 @@
 var express = require('express');
 var bodyParser = require('body-parser');
 var app = express();
-app.use(bodyParser.urlencoded({extended: false}));
-app.use(bodyParser.json());
-var cors = require('cors');
-app.use(cors());
+//app.use(bodyParser.urlencoded({extended: false}));
+//app.use(bodyParser.json());
+//var cors = require('cors');
+//app.use(cors());
 var DButilsAzure = require('./DButils');
 var squel = require("squel");
 
@@ -18,11 +18,12 @@ var users = require('./routes/users');
 var admins = require('./routes/Admin');
 var orders = require('./routes/orders');
 var musicalsInstruments = require('./routes/musicalsInstruments');
-app.use(cors());
+
+//app.use(cors());
 
 // view engine setup
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'jade');
+//app.set('views', path.join(__dirname, 'views'));
+//app.set('view engine', 'jade');
 
 
 //app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
@@ -30,9 +31,9 @@ app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
-
-app.use('/', index);
+app.use(express.static(__dirname + '/public/shopClient/app'));
+//app.use(express.static(__dirname + '/public/shopClient/app/templates'));
+//app.use('/', index);
 
 
 //*****************************************************************************************

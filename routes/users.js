@@ -1,7 +1,7 @@
 var express = require('express');
 var router = express.Router();
 var DButilsAzure = require('../DBUtils');
-var appTools = require("../app");
+var appTools = require("../server");
 var squel = require("squel");
 
 
